@@ -1,47 +1,95 @@
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from './../../../configs/firebaseConfig';
+import { auth, db } from '../../../configs/firebaseConfig';
+import { getDocs, query, collection, where } from 'firebase/firestore';
 
 export default function SignIn() {
   const router = useRouter();
   const navigation = useNavigation();
 
-  const [email, setEmail] = useState(''); // Declare useState at the top level
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
+    navigation.setOptions({ headerShown: false });
   }, []);
 
-  const onSignIn = () => {
+  const onSignIn = async () => {
     if (!email || !password) {
-      console.log("All fields are required");
+      setErrorMessage("Email and password are required");
       return;
     }
 
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        // Signed in
-        const user = userCredential.user;
-        console.log(user);
+    setLoading(true);
+    setErrorMessage("");
 
-        // Navigate to MainPage or desired route after successful sign-in
-        router.push('tabs/MainPage');
-      })
-      .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        console.log(errorMessage, errorCode);
+    try {
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
+      console.log("Logging in with:", trimmedEmail, trimmedPassword); // Debugging
+      // Firebase Authentication
+      const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
+      const user = userCredential.user;
 
-        if (errorCode === 'auth/invalid-credential') {
-          console.log("Invalid Credentials");
+      if (!user) {
+        setErrorMessage("Authentication failed.");
+        setLoading(false);
+        return;
+      }
+
+      let userRole = "";
+
+      // Check in the "receptionist" collection
+      const receptionistQuery = query(collection(db, "receptionist"), where("email", "==", trimmedEmail));
+      const receptionistSnapshot = await getDocs(receptionistQuery);
+
+      if (!receptionistSnapshot.empty) {
+        userRole = "Receptionist";
+      }
+
+      // Check in the "patient" collection if not found in receptionist
+      if (!userRole) {
+        const patientQuery = query(collection(db, "patient"), where("email", "==", trimmedEmail));
+        const patientSnapshot = await getDocs(patientQuery);
+
+        if (!patientSnapshot.empty) {
+          userRole = "Patient";
         }
-      });
+      }
+
+      if (!userRole) {
+        setErrorMessage("User role not found in database.");
+        setLoading(false);
+        return;
+      }
+
+      // Navigate based on role
+      if (userRole === "Receptionist") {
+        router.replace('receptionistPage');
+      } else {
+        router.replace('tabs/MainPage');
+      }
+
+    } catch (error) {
+      console.error("Error signing in:", error);
+
+      if (error.code === 'auth/invalid-credential') {
+        setErrorMessage("Invalid email or password. Please check your credentials.");
+      } else if (error.code === 'auth/user-not-found') {
+        setErrorMessage("No user found with this email.");
+      } else if (error.code === 'auth/wrong-password') {
+        setErrorMessage("Incorrect password.");
+      } else {
+        setErrorMessage("An error occurred. Please try again.");
+      }
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -74,9 +122,18 @@ export default function SignIn() {
         />
       </View>
 
+      {/* Error Message */}
+      {errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
+
       {/* Sign-In Button */}
-      <TouchableOpacity onPress={onSignIn} style={styles.signInButton}>
-        <Text style={styles.signInButtonText}>Sign In</Text>
+      <TouchableOpacity onPress={onSignIn} style={styles.signInButton} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <Text style={styles.signInButtonText}>Sign In</Text>
+        )}
       </TouchableOpacity>
 
       {/* Create Account Button */}
@@ -131,5 +188,11 @@ const styles = StyleSheet.create({
   createAccountText: {
     color: "blue",
     textAlign: "center",
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 10,
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
