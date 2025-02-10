@@ -4,20 +4,19 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import {auth} from './../../configs/firebaseConfig';
 
 // onPress={()=>router.push('auth/sign-in')}
 
 export default function Header() {
 
-    const [modalVisible, setModalVisible] = useState(false);
-    // const userInitial = "A"; // Replace with dynamic initial
+    const [user,setUser] = useState(null); 
 
-    const dropdownItems = [
-        { label: "Profile", onPress: () => console.log("Profile") },
-        { label: "Settings", onPress: () => console.log("Settings") },
-        { label: "Logout", onPress: () => console.log("Logout") },
-        { label: "Help", onPress: () => console.log("Help") },
-    ];
+    useEffect(() => {
+        setUser(auth.currentUser);
+    },[]);
+
+    //const userInitial = "A"; // Replace with dynamic initial
 
     const router =useRouter();
 
@@ -46,49 +45,12 @@ export default function Header() {
       />
 
       <View style={styles.userProfile}>
-                <TouchableOpacity style={styles.userIcon}  onPress={() => setModalVisible(true)}>
+                <TouchableOpacity style={styles.userIcon}  onPress={() => router.replace("/tabs/Profile")}>
                     <Text style={styles.userInitial}>Z</Text> 
                 </TouchableOpacity>
-                {/* <TouchableOpacity >
-                    <Text style={styles.dropdownButton}>▼</Text>
-                </TouchableOpacity> */}
             </View>
 
         </View>
-
-
-
-
-
-        {/* MODAL  */}
-
-        <Modal
-                transparent={true}
-                visible={modalVisible}
-                animationType="fade"
-                onRequestClose={() => setModalVisible(false)} // Close modal when back is pressed
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    onPress={() => setModalVisible(false)} // Close modal when tapping outside
-                />
-                <View style={styles.modalContent}>
-                    {dropdownItems.map((item, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                                setModalVisible(false); // Close modal when an item is clicked
-                                item.onPress(); // Perform the action
-                            }}
-                        >
-                            <Text style={styles.dropdownItemText}>{item.label}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </Modal>
-
-
     </View>
   )
 }

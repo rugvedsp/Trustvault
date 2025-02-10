@@ -16,7 +16,6 @@ export default function Index() {
     {/* <MainPage /> */}
     {/* <HealthCare /> */}
 
-    
     </View>
   );
 }

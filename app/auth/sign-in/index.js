@@ -70,7 +70,7 @@ export default function SignIn() {
 
       // Navigate based on role
       if (userRole === "Receptionist") {
-        router.replace('receptionistPage');
+        router.replace('Receptionist/ReceptionistPage');
       } else {
         router.replace('tabs/MainPage');
       }
