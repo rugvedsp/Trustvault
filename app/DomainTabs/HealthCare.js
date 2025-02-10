@@ -1,37 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  View, FlatList, StyleSheet, Dimensions, Text, TouchableOpacity, Modal, ActivityIndicator 
+  View, FlatList, StyleSheet, Dimensions, Text, TouchableOpacity, ActivityIndicator 
 } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+// Get screen width for responsive design
 const { width } = Dimensions.get('window');
+
+// Import local JSON files (Update paths if necessary)
+import template1 from '../../templates/1739188742596.json';
+import template2 from '../../templates/1739189428010.json';
+import template3 from '../../templates/1739189551977.json';
 
 export default function HealthCare() {
   const router = useRouter();
-
-  const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [templateDocs, setTemplateDocs] = useState([]);
-  const [templateModalVisible, setTemplateModalVisible] = useState(false);
 
-  // Fetch Stored Documents from API
-  const handleViewDocuments = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('http://localhost:3000/api/templates'); 
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+  useEffect(() => {
+    // Simulate fetching local templates
+    const loadTemplates = async () => {
+      try {
+        // Combine all local JSON templates
+        const templates = [template1, template2, template3];
+        setTemplateDocs(templates);
+      } catch (error) {
+        console.error("Error loading templates:", error);
+        setTemplateDocs([]); // Ensure UI does not break
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      const result = await response.json();
-      setTemplateDocs(result); // Store fetched documents
-    } catch (error) {
-      console.error('Error fetching templates:', error);
-    } finally {
-      setLoading(false);
-      setTemplateModalVisible(true);
-    }
-  };
+    loadTemplates();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -44,46 +47,25 @@ export default function HealthCare() {
 
       <Text style={styles.heading}>Health Care Documents</Text>
 
-      {/* Add Document Button */}
-      <TouchableOpacity 
-        style={styles.addButton}
-        onPress={handleViewDocuments}
-      >
-        <Text style={styles.addButtonText}>View Documents</Text>
-      </TouchableOpacity>
-
-      {/* Template Documents Modal */}
-      <Modal visible={templateModalVisible} animationType="slide" transparent={true}>
-        <View style={styles.modalBackground}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Stored Documents</Text>
-
-            {loading ? (
-              <ActivityIndicator size="large" color="blue" />
-            ) : templateDocs.length > 0 ? (
-              <FlatList 
-                data={templateDocs}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <View style={styles.docItem}>
-                    <Text style={styles.modalText}>📄 {item.name}</Text>
-                    <Text style={styles.modalText}>📅 {item.date}</Text>
-                  </View>
-                )}
-              />
-            ) : (
-              <Text style={styles.modalText}>No documents available</Text>
-            )}
-
-            <TouchableOpacity 
-              onPress={() => setTemplateModalVisible(false)} 
-              style={styles.closeButton}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {loading ? (
+        <ActivityIndicator size="large" color="blue" />
+      ) : templateDocs.length > 0 ? (
+        <FlatList 
+          data={templateDocs}
+          keyExtractor={(item, index) => index.toString()} 
+          renderItem={({ item }) => (
+            <View style={styles.docItem}>
+              <Text style={styles.modalText}>👤 Patient: {item.patientName}</Text>
+              <Text style={styles.modalText}>🩺 Doctor: {item.doctorName}</Text>
+              <Text style={styles.modalText}>💊 Medication: {item.medication}</Text>
+              <Text style={styles.modalText}>📅 Follow-up: {item.followUpDate}</Text>
+              {item.notes ? <Text style={styles.modalText}>📝 Notes: {item.notes}</Text> : null}
+            </View>
+          )}
+        />
+      ) : (
+        <Text style={styles.modalText}>No documents available</Text>
+      )}
     </View>
   );
 }
@@ -108,54 +90,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     marginTop: width > 786 ? 10 : 40,
   },
-  addButton: {
-    backgroundColor: "black",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 20
-  },
-  addButtonText: {
-    color: "white",
-    fontWeight: "bold"
-  },
-  modalBackground: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
   modalText: {
     fontSize: 16,
     marginBottom: 5,
-  },
-  closeButton: {
-    backgroundColor: "black",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  closeButtonText: {
-    color: "white",
-    fontWeight: "bold",
   },
   docItem: {
     padding: 10,
     backgroundColor: "#f2f2f2",
     marginVertical: 5,
-    width: "100%",
+    width: "90%",
     borderRadius: 5,
+    alignItems: "flex-start"
   }
 });
-

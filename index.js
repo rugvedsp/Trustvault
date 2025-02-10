@@ -3,17 +3,26 @@ const multer = require('multer');
 const tesseract = require('tesseract.js');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const port = 3000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json()); // To parse JSON requests
-const upload = multer({ dest: './app/auth/uploads' }); 
+app.use(bodyParser.json()); 
+
+// Ensure uploads and templates directories exist
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const TEMPLATES_DIR = path.join(__dirname, 'templates');
+
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(TEMPLATES_DIR)) fs.mkdirSync(TEMPLATES_DIR, { recursive: true });
+
+const upload = multer({ dest: UPLOADS_DIR });
 
 const recognizedTexts = [];
-const templates = []; // Store received form templates
 
 // Root route
 app.get('/', (req, res) => {
@@ -32,18 +41,24 @@ app.post('/api/ocr', upload.single('image'), (req, res) => {
     res.json({ text });
   })
   .catch(err => {
-    console.error(err);
+    console.error('OCR Processing Error:', err);
     res.status(500).json({ error: 'Failed to process the image.' });
   });
 });
 
+// Fetch recognized texts
+app.get('/api/ocr/data', (req, res) => {
+  res.json(recognizedTexts);
+});
+
+// Sample Prescriptions
 const prescriptions = [
   { id: 1, patientName: "John Smith", doctorName: "Dr. Adams", medication: "Paracetamol", followUpDate: "Feb 10, 2025" },
   { id: 2, patientName: "Emily Brown", doctorName: "Dr. Lee", medication: "Ibuprofen", followUpDate: "Mar 5, 2025" },
   { id: 3, patientName: "Lisa Green", doctorName: "Dr. Patel", medication: "Aspirin", followUpDate: "Apr 2, 2025" },
 ];
 
-// **API to fetch prescription data**
+// Fetch prescription data
 app.get('/api/prescriptions/:id', (req, res) => {
   const patientId = parseInt(req.params.id);
   const prescription = prescriptions.find(p => p.id === patientId);
@@ -51,17 +66,11 @@ app.get('/api/prescriptions/:id', (req, res) => {
   if (!prescription) {
     return res.status(404).json({ error: "Prescription not found" });
   }
-  console.log(prescription)
+  
   res.json(prescription);
 });
 
-// Fetch recognized texts
-app.get('/api/ocr/data', (req, res) => {
-  console.log(recognizedTexts);
-  res.json(recognizedTexts);
-});
-
-// **New Route to Receive Form Template Data**
+// Save Form Template to a File
 app.post('/api/generate-template', (req, res) => {
   const { patientName, doctorName, medication, followUpDate, notes } = req.body;
 
@@ -70,7 +79,7 @@ app.post('/api/generate-template', (req, res) => {
   }
 
   const templateData = {
-    id: templates.length + 1,
+    id: Date.now(),
     patientName,
     doctorName,
     medication,
@@ -78,15 +87,32 @@ app.post('/api/generate-template', (req, res) => {
     notes,
   };
 
-  templates.push(templateData);
-  console.log('Received Template:', templateData);
+  const filePath = path.join(TEMPLATES_DIR, `${templateData.id}.json`);
 
-  res.json({ message: 'Template received successfully', data: templateData });
+  fs.writeFile(filePath, JSON.stringify(templateData, null, 2), (err) => {
+    if (err) {
+      console.error('Error saving template:', err);
+      return res.status(500).json({ error: 'Failed to save template' });
+    }
+    res.json({ message: 'Template saved successfully', data: templateData });
+  });
 });
 
-// Fetch stored templates
+// Fetch Stored Templates
 app.get('/api/templates', (req, res) => {
-  res.json(templates);
+  fs.readdir(TEMPLATES_DIR, (err, files) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to retrieve templates' });
+    }
+
+    const templates = files.map(file => {
+      const filePath = path.join(TEMPLATES_DIR, file);
+      const fileContent = fs.readFileSync(filePath);
+      return JSON.parse(fileContent);
+    });
+
+    res.json(templates);
+  });
 });
 
 // Start the server

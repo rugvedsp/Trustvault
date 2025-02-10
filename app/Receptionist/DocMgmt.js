@@ -1,8 +1,7 @@
 import React from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { createStackNavigator } from '@react-navigation/stack';
-import { NavigationContainer } from '@react-navigation/native';
+import { useRouter } from "expo-router";
 
 // Dummy Data
 const doctors = [
@@ -11,8 +10,9 @@ const doctors = [
   { name: "Dr. Lisa Green", contact: "+9876543210", specialty: "Neurologist", available: "Wed-Sat" },
 ];
 
-// **Doctor Management Screen**
 const DoctorMgmt = () => {
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -37,13 +37,13 @@ const DoctorMgmt = () => {
         {doctors.map((doctor, index) => (
           <View key={index} style={styles.doctorCard}>
             <Text style={styles.doctorName}>{doctor.name}</Text>
-            <Text style={styles.doctorInfo}>Contact: {doctor.contact}</Text>
-            <Text style={styles.doctorInfo}>Specialty: {doctor.specialty}</Text>
-            <Text style={styles.doctorInfo}>Available: {doctor.available}</Text>
+            {doctor.contact && <Text style={styles.doctorInfo}>Contact: {doctor.contact}</Text>}
+            {doctor.specialty && <Text style={styles.doctorInfo}>Specialty: {doctor.specialty}</Text>}
+            {doctor.available && <Text style={styles.doctorInfo}>Available: {doctor.available}</Text>}
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.prescriptionButton}>
-                <Text style={styles.buttonText}>Prescription</Text>
+              <TouchableOpacity style={styles.receiptButton}>
+                <Text style={styles.receiptText}>Prescription</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.receiptButton}>
                 <Text style={styles.receiptText}>Receipts</Text>
@@ -54,7 +54,7 @@ const DoctorMgmt = () => {
       </ScrollView>
 
       <View style={styles.bottomNav}>
-        <TouchableOpacity onPress={() => navigation.navigate("ReceptionistPage")}>
+        <TouchableOpacity onPress={() => router.push("/ReceptionistPage") }>
           <Ionicons name="home" size={24} color="black" />
         </TouchableOpacity>
         <TouchableOpacity>
@@ -66,9 +66,8 @@ const DoctorMgmt = () => {
       </View>
     </View>
   );
-}
+};
 
-// **Styles**
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -107,7 +106,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sortButton: {
-    backgroundColor: "red",
+    backgroundColor: "black",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 50,
@@ -134,20 +133,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginTop: 10,
   },
-  prescriptionButton: {
-    backgroundColor: "red",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 50,
-    marginRight: 10,
-  },
   receiptButton: {
     backgroundColor: "white",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 50,
     borderWidth: 1,
-    borderColor: "gray",
+    borderColor: "black",
   },
   receiptText: {
     color: "black",
