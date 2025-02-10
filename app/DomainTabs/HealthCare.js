@@ -1,17 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, FlatList, StyleSheet, Dimensions, Text, TouchableOpacity, ActivityIndicator 
-} from 'react-native';
+import { View, FlatList, StyleSheet, Dimensions, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-// Get screen width for responsive design
 const { width } = Dimensions.get('window');
-
-// Import local JSON files (Update paths if necessary)
-import template1 from '../../templates/1739188742596.json';
-import template2 from '../../templates/1739189428010.json';
-import template3 from '../../templates/1739189551977.json';
 
 export default function HealthCare() {
   const router = useRouter();
@@ -19,15 +11,14 @@ export default function HealthCare() {
   const [templateDocs, setTemplateDocs] = useState([]);
 
   useEffect(() => {
-    // Simulate fetching local templates
     const loadTemplates = async () => {
       try {
-        // Combine all local JSON templates
-        const templates = [template1, template2, template3];
+        const context = require.context('../../templates', false, /\.json$/);
+        const templates = context.keys().map(context);
         setTemplateDocs(templates);
       } catch (error) {
         console.error("Error loading templates:", error);
-        setTemplateDocs([]); // Ensure UI does not break
+        setTemplateDocs([]);
       } finally {
         setLoading(false);
       }
@@ -38,10 +29,7 @@ export default function HealthCare() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.backButton}
-        onPress={() => router.back()}
-      >
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back-sharp" size={24} color="black" />
       </TouchableOpacity>
 
@@ -50,9 +38,9 @@ export default function HealthCare() {
       {loading ? (
         <ActivityIndicator size="large" color="blue" />
       ) : templateDocs.length > 0 ? (
-        <FlatList 
+        <FlatList
           data={templateDocs}
-          keyExtractor={(item, index) => index.toString()} 
+          keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => (
             <View style={styles.docItem}>
               <Text style={styles.modalText}>👤 Patient: {item.patientName}</Text>
@@ -69,6 +57,8 @@ export default function HealthCare() {
     </View>
   );
 }
+
+
 
 // Styles
 const styles = StyleSheet.create({
@@ -103,3 +93,5 @@ const styles = StyleSheet.create({
     alignItems: "flex-start"
   }
 });
+
+
